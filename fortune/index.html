@@ -1,0 +1,1269 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>100% 星占い</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#B79DF2">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon-192.png">
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    html,
+    body {
+      max-width: 100%;
+      overflow-x: hidden;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Noto Sans JP", sans-serif;
+      background: #ffffff;
+      color: #333333;
+      margin: 0;
+      min-height: 100vh;
+      padding: 12px 8px 16px;
+      text-align: center;
+      touch-action: pan-y;
+      display: block;
+    }
+    .app-card {
+      width: 100%;
+      max-width: 640px;
+      margin: 0 auto 20px;
+      background: #ffffff;
+      border-radius: 24px;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+      padding: 18px 16px 20px;
+    }
+    .app-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .app-icon {
+      font-size: 39.2px;
+    }
+    .app-title-block {
+      text-align: left;
+    }
+    .app-title {
+      font-size: 26px;
+      font-weight: 600;
+      color: #7C4DFF;
+      margin: 0;
+    }
+
+    .form-row {
+      margin-bottom: 10px;
+      text-align: left;
+    }
+    label {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 16.8px;
+      color: #555555;
+    }
+    input {
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: 12px;
+      border: 1px solid #DDDDFF;
+      font-size: 18.2px;
+      font-family: inherit;
+    }
+    input:focus {
+      outline: none;
+      border-color: #B79DF2;
+      box-shadow: 0 0 0 1px rgba(183,157,242,0.5);
+    }
+    button {
+      width: 100%;
+      border: none;
+      padding: 11px 12px;
+      border-radius: 12px;
+      margin-top: 14px;
+      font-size: 19.6px;
+      font-weight: 600;
+      background: linear-gradient(135deg, #B79DF2, #7C4DFF);
+      color: #ffffff;
+      cursor: pointer;
+    }
+    button:active {
+      transform: translateY(1px);
+      box-shadow: 0 3px 8px rgba(0,0,0,0.2) inset;
+    }
+    .secondary-button {
+      margin-top: 18px;
+      background: #ffffff;
+      color: #7C4DFF;
+      border: 1px solid #D4C4FF;
+      box-shadow: none;
+    }
+
+    #saveBtn {
+      margin-top: 28px;
+    }
+    .secondary-button:active {
+      box-shadow: 0 0 0 1px rgba(183,157,242,0.4) inset;
+      transform: translateY(0);
+    }
+
+    .result {
+      margin-top: 16px;
+      text-align: left;
+    }
+    .section-title {
+      margin: 18px 0 4px;
+      font-size: 25.2px;
+      font-weight: 600;
+      color: #7C4DFF;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .section-title span.icon {
+      font-size: 25.2px;
+    }
+    .section-title span.label {
+      flex: 1;
+    }
+    .section-title span.percent {
+      font-size: 18.2px;
+      color: #555555;
+    }
+    .text-block {
+      font-size: 23.8px;
+      color: #555555;
+      line-height: 1.7;
+      padding: 8px 10px;
+      border-radius: 14px;
+      background: #F7F4FF;
+      margin-bottom: 6px;
+    }
+    .birthday {
+      margin-top: 12px;
+      font-size: 22.4px;
+      color: #C06FD8;
+      text-align: left;
+    }
+    #confettiCanvas {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 9999;
+    }
+
+    @media (max-width: 600px) {
+      body {
+        padding: 0;
+        margin: 0;
+        display: block;
+      }
+      .app-card {
+        width: 100%;
+        max-width: 100%;
+        margin: 0;
+        border-radius: 0;
+        box-shadow: none;
+      }
+    }
+
+
+    /* PWA(standalone) のときは端末幅いっぱいに */
+    @media (display-mode: standalone), (display-mode: fullscreen) {
+      body {
+        padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+        margin: 0;
+      }
+      .app-card {
+        width: 100%;
+        max-width: 100%;
+        margin: 0 0 20px;
+      }
+    }
+</style>
+
+  <!-- Astronomy Engine -->
+  <script src="https://cdn.jsdelivr.net/npm/astronomy-engine@2.1.19/astronomy.browser.min.js"></script>
+  <!-- 結果を画像化するライブラリ -->
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+</head>
+<body>
+<canvas id="confettiCanvas"></canvas>
+<script>
+const PARAMS = new URLSearchParams(location.search);
+const EMBED_MODE = PARAMS.get('embed') === '1' || PARAMS.get('gift') === '1';
+const EMBED_ROOM_INDEX = Number(PARAMS.get('room') || -1);
+function notifyMothershipImage(imageData, meta = {}) {
+  try {
+    if (window.parent && window.parent !== window && imageData) {
+      window.parent.postMessage({ type: 'mothership:image', roomIndex: Number.isFinite(EMBED_ROOM_INDEX) && EMBED_ROOM_INDEX >= 0 ? EMBED_ROOM_INDEX : undefined, imageData, ...meta }, '*');
+    }
+  } catch (e) {}
+}
+</script>
+
+<div class="app-card" id="cardRoot">
+  <div class="app-header">
+    <div class="app-icon">🪐</div>
+    <div class="app-title-block">
+      <p class="app-title">100% 星占い</p>
+    </div>
+  </div>
+
+  <div class="form-row">
+    <label for="birth">生年月日</label>
+    <input id="birth" type="date" value="1978-12-31">
+  </div>
+
+  <div class="form-row">
+    <label for="targetDate">占いたい日（空欄なら今日）</label>
+    <input id="targetDate" type="date">
+  </div>
+
+  <button type="button" onclick="calc()">この日の運勢を見る</button>
+
+  <div id="result" class="result"></div>
+  <div id="birthdayMessage" class="birthday"></div>
+
+  <button
+    type="button"
+    id="saveBtn"
+    class="secondary-button"
+    style="display:none"
+    onclick="saveResultImage()"
+  >
+    結果を保存
+  </button>
+</div>
+
+<script>
+// --- ?clear-sw=1 で SW とキャッシュを全消しして再読み込み ---
+(function () {
+  if (location.search.indexOf('clear-sw=1') !== -1 &&
+      'serviceWorker' in navigator && 'caches' in window) {
+    Promise.all([
+      navigator.serviceWorker.getRegistrations().then(function (regs) {
+        return Promise.all(regs.map(function (r) { return r.unregister(); }));
+      }),
+      caches.keys().then(function (keys) {
+        return Promise.all(keys.map(function (k) { return caches.delete(k); }));
+      })
+    ]).then(function () {
+      console.log('ServiceWorker & caches cleared via ?clear-sw=1');
+      var url = location.origin + location.pathname + location.hash;
+      location.replace(url);
+    });
+  }
+})();
+
+(function () {
+  'use strict';
+
+  console.log('Horoscope engine 5.0: planets + local-window + rare100');
+
+  // --- Service Worker 登録 ---
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('sw.js')
+        .then(function (reg) {
+          console.log('ServiceWorker registered:', reg.scope);
+          if (reg && reg.update) {
+            reg.update();
+          }
+        })
+        .catch(function (err) {
+          console.log('ServiceWorker registration failed:', err);
+        });
+    });
+  }
+
+  // ---------- 共通ユーティリティ ----------
+  function stableSeed(str) {
+    var h = 1779033703 ^ str.length;
+    for (var i = 0; i < str.length; i++) {
+      h = Math.imul(h ^ str.charCodeAt(i), 3432918353);
+      h = (h << 13) | (h >>> 19);
+    }
+    h = (h ^ (h >>> 16)) >>> 0;
+    return h;
+  }
+
+  function makeRng(seed) {
+    var a = seed >>> 0;
+    return function () {
+      a |= 0;
+      a = (a + 0x6D2B79F5) | 0;
+      var t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = t + Math.imul(t ^ (t >>> 7), 61 | t) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  var TEXT_BANK = {
+
+    total: {
+      a: [
+        "追い風を感じやすいタイミング。やりたいことを一つだけ決めて、そこに時間を使ってみてください。ちょっとした行動が、次のきっかけにつながっていきそうです。",
+        "全体的にスムーズに流れやすい日。完璧を目指すよりも、「今日はここまでできれば十分」と自分に言ってあげると、気持ちよく一日を終えられそうです。",
+        "やるべきことと、やりたいことのバランスが取りやすい日。午前中に少しだけ集中して片づけて、午後は自分の楽しみに時間を回してみてください。",
+        "小さな「やってみよう」が実りやすいタイミング。結果よりも、今日一歩踏み出した自分をほめてあげるつもりで動いてみましょう。",
+        "周りとのリズムが自然と合いやすい日。無理に空気を読もうとせず、落ち着いたテンポで関わると、良い連鎖が生まれていきそうです。",
+        "何気ない日常の中に、ふと心が温かくなる瞬間がありそうです。いつもより少しだけ景色を見上げて、今あるものに目を向けてみてください。",
+        "気になっていたことを「ひとつだけ整える」に向いている日。部屋の一角でも、デスク周りでも、小さな片づけが気持ちの軽さにつながります。",
+        "年内の流れの中でも、追い風を感じやすいタイミング。少しだけ背伸びしたチャレンジが、思った以上の成果や出会いにつながるかもしれません。",
+        "心と体のリズムが整いやすい日。あれもこれもと欲張らず、「今日はこれだけ」と決めて取り組むと、充実感の残る一日になります。",
+        "ふだんの努力が、ささやかな形で報われやすいタイミング。人からのさりげない言葉や反応の中に、うれしい手応えを感じそうです。",
+        "自分の得意なことが自然と発揮される日。頼まれごとや相談には、無理のない範囲で応じると、信頼が静かに積み上がります。",
+        "新しいアイデアがひらめきやすい日。完璧な形でなくても、思いついたことをメモに残しておくと、後々大きなヒントになるでしょう。",
+        "周囲とのささやかな助け合いが、心をあたためてくれるタイミング。小さな「ありがとう」を口にすることで、良い循環が生まれます。",
+        "物事が比較的スムーズに運びやすい日。早め早めに動き出しておくと、夕方にはゆとりのある時間を確保できそうです。",
+        "普段見過ごしがちな景色や音に、ふと心が動きそうな日。少し歩くスピードを落として、周りを眺めてみてください。",
+        "自分のペースを守りながらも、周りと気持ちよく協力し合えるタイミング。役割分担がうまくいくと、思っていた以上に物事が進みます。",
+        "静かな自信が育ちやすい日。大きくアピールしなくても、丁寧な仕事ぶりや態度が自然と伝わっていきます。",
+        "やり残していたことに一区切りをつけやすいタイミング。小さなタスクでも一つ終えるたびに、心の中のスペースが広がっていきます。",
+        "自分の価値観を見つめ直すのに向いた日。何を大事にしたいのかを書き出してみると、今後の選択が少し楽になりそうです。",
+        "新しい習慣の種をまきやすいタイミング。毎日数分でできることを一つだけ始めてみると、数ヶ月後の自分が変わっていきます。",
+        "少し先の予定を立てることで、今日の行動が決まりやすくなる日。旅行や勉強、仕事の計画など、ワクワクする未来を一つ描いてみてください。",
+        "人との会話から、思いがけないヒントを受け取りやすい日。印象に残った言葉はメモしておくと、あとで大事な指針になるかもしれません。",
+        "感謝の気持ちを言葉にすることで、運気の流れが穏やかに整っていくタイミング。「ありがとう」をいつもより少し多めに伝えてみてください。",
+        "心のどこかで気になっていたことに、そっと向き合える日。無理に解決しようとせず、「気づけただけでも一歩前進」と捉えてみましょう。",
+        "今日の出来事を日記やメモに残すと、あとで振り返ったときに大きな意味を持ちそうな日。数行でも、自分の言葉で書いてみてください。",
+        "自然のものに触れることで、気持ちが整いやすいタイミング。空や木々、風の感触など、身近なところで季節を感じてみましょう。",
+        "ゆっくり深呼吸をするだけで、流れがふっと軽くなりそうな日。緊張を感じたら、立ち止まって数回だけ大きく息を吸って吐いてみてください。",
+        "自分の長所を意識すると運気が上向きやすいタイミング。得意なことを一つ思い浮かべて、それを今日どこかで活かしてみましょう。",
+        "ペース配分が上手くいきやすい日。午前と午後で集中する時間と休む時間を分けて組み立てると、無理なく過ごせそうです。",
+        "「まあ、なんとかなる」と肩の力を抜くことで、かえって物事がスムーズに進みやすいタイミング。完璧よりも、心の余裕を優先してみてください。",
+        "小さな楽しみをあらかじめ仕込んでおくと、一日全体の満足度が上がる日。お気に入りのおやつや音楽など、自分へのご褒美を用意しておきましょう。",
+        "人の役に立てた実感が得られやすい日。ちょっとしたサポートや声かけが、思った以上に感謝されそうです。"
+      ],
+      b: [
+        "大きな山はなくても、日常を整えやすい日。すべてを一度に変えようとせず、身の回りの小さなところから整えていくと、心も落ち着いてきます。",
+        "いつも通りの一日の中にも、小さな楽しみを見つけやすいタイミング。好きな飲み物や音楽をひとつ足して、自分だけのごほうび時間を作ってみてください。",
+        "思っていたほど悪くない流れの日。大成功を目指すより、「今日はここまでできたら十分」とハードルを少し下げてあげると、気持ちよく過ごせそうです。",
+        "人とのやりとりは穏やかに進みやすい日。返事を急がず、一度メモに書き出してから伝えると、誤解が減って安心感が増えそうです。",
+        "少しだけペースを落としても問題ないタイミング。周囲と比べるより、自分なりの心地よいリズムを優先すると、疲れを溜めずに済みます。",
+        "やる気の波がゆるやかに動く日。気乗りしないことは最小限にして、短時間で終わるタスクから片づけると、自然とエンジンが温まってきます。",
+        "大きな判断を保留にしても良い日。今日は情報を集めるところまでにしておき、決断はもう一日様子を見るくらいの感覚で大丈夫です。",
+        "生活の基礎を整えるのに良いタイミング。少し面倒な手続きや片づけも、今日のうちに一歩だけ進めておくと後が楽になります。",
+        "気分の浮き沈みが穏やかで、淡々と過ごせる日。特別なことをしなくても、丁寧に日常をこなすことで安心感が育っていきます。",
+        "予定が大きく動きにくいぶん、自分のペースを作りやすい日。合間に短い休憩を入れながら、無理のないリズムで進めてみてください。",
+        "「やらなければ」と思っていたことに、ようやく手を付けられそうなタイミング。最初の5分だけでも取りかかると、意外とそのまま進めます。",
+        "人とのやりとりは穏やかに落ち着きやすい日。返信は丁寧さを意識すると、安心して話せる関係が育っていきます。",
+        "少しだけ環境を整えることで、気持ちもゆるやかに整っていく日。机の上やカバンの中など、小さな範囲を整えてみてください。",
+        "頭の中の「やることリスト」を整理するのに向いたタイミング。優先度をつけておくだけでも、今後の見通しがすっきりします。",
+        "自分のペースを守ることがテーマの日。無理な頼まれごとは、できる範囲を正直に伝えるほうが、長い目で見て関係が安定します。",
+        "特別な成果を求めるより、「今日も一日よくやった」と自分を認めてあげたい日。小さな達成にも、静かに拍手を送ってあげてください。"
+      ],
+      c: [
+        "少し慎重さが役に立つ日。無理に答えを出そうとせず、「今日は様子を見る」と決めるだけでも、心に余白が生まれます。自分を責めすぎないでくださいね。",
+        "思い通りに進まない場面もあるかもしれませんが、それでも大丈夫。できなかったことより、今日ちゃんとできたことを一つ思い出して、そっと自分をねぎらってあげましょう。",
+        "気持ちが揺れやすく、集中しづらいと感じるかもしれません。今日は「最低限できればOK」と決めて、あとは早めに心と体を休ませてあげてください。",
+        "周囲のペースに合わせようとすると疲れやすい日。できる範囲を自分の中で決めて、それ以上は抱え込まないとあらかじめ決めておくと楽になります。",
+        "不安やもやもやが出てきたら、頭の中だけで考え続けないことが大切。紙に書き出したり、誰かに軽く話したりして、外に出してあげるだけでも少し楽になりそうです。",
+        "調子がいまひとつでも、それは「休んでいいよ」というサイン。今日は攻めるよりも、体をあたためる・早く寝るなど、自分を守る行動を優先してあげてください。",
+        "うまくいかないことがあっても、すべてがダメになったわけではありません。小さな成功や、誰かの優しさを一つだけ拾い上げて、そこに意識を向けてみましょう。"
+      ]
+    },
+    love: {
+      a: [
+        "人との距離が心地よく縮まりやすい日。恋愛に限らず、素直な「ありがとう」や「おつかれさま」が、関係をあたたかくしてくれそうです。",
+        "気になる人との会話が弾みやすいタイミング。大きなアクションよりも、ちょっとした気遣いやスタンプひとつが、相手の心にやさしく届きそうです。"
+      ],
+      b: [
+        "言葉の行き違いに敏感になりやすい日。相手の一言を深読みしすぎず、「今日はそういう日もある」と受け止めてみると、気持ちが少し軽くなります。",
+        "過去の出来事をふと思い出しやすいかもしれません。うまくいかなかった経験も、「あの時の自分もよくがんばっていた」と認めてあげると、今の恋にもやさしく向き合えます。"
+      ],
+      c: [
+        "気持ちが揺れやすい日。無理に明るく振る舞うより、信頼できる人とのゆるい会話や一人時間で心を落ち着かせるほうが、恋のバランスも整いやすくなります。",
+        "相手のペースと自分のペースの違いを、少し重く感じてしまうかもしれません。答えを急がず、「今日は自分の心の声をよく聴く日」と決めて過ごしてみてください。"
+      ]
+    },
+    work: {
+      a: [
+        "集中力を発揮しやすい日。短い時間でも「ここまでやる」と決めて取り組むと、手応えと達成感の両方を得られそうです。",
+        "得意な作業で周りを支えやすいタイミング。無理のない範囲で手を差し伸べると、信頼感がぐっと高まりそうです。"
+      ],
+      b: [
+        "淡々と取り組むことで、気づいたら進んでいる日。仕事前に今日やることを三つだけ書き出すと、スムーズに動きやすくなります。",
+        "「がんばる」と「休む」のバランスをとりたいタイミング。同じ姿勢が続くときは、軽く首や肩を回してリセットしてあげてください。"
+      ],
+      c: [
+        "集中しにくさを感じたら、いったんタスクを細かく区切ってみましょう。「ここまでできたら休憩」と小さなゴールを作ると、気持ちが少し楽になります。",
+        "判断に迷うことが増えそうな日。大きな決断は明日以降に回し、今日は情報を集める日にするのも一つの選択です。"
+      ]
+    },
+    money: {
+      a: [
+        "お金との付き合い方を整えやすい日。レシートや明細をざっと眺めて、気になる項目に印をつけるだけでも、流れが見えやすくなります。",
+        "欲しいものと必要なものの線引きがしやすいタイミング。今日は「本当にときめくもの」だけを選ぶ意識で、お金を使ってみてください。"
+      ],
+      b: [
+        "「なんとなく」で使ってしまうお金を見直したくなる日。すべてを管理しきれなくても、「これはやめてみようかな」と思う項目を一つ決めるだけで十分です。",
+        "大きな出費よりも、日々の小さな積み重ねが気になるタイミング。無理な節約ではなく、「ここだけ少し控えめにしてみよう」くらいが続けやすそうです。"
+      ],
+      c: [
+        "お金のことを考えると少し不安が出てきやすい日。ひとりで抱え込まず、信頼できる人に軽く相談したり、家計アプリで現状を「見える化」するところから始めてみてください。",
+        "今日は大きな契約や高額な買い物は慎重に。もう一度条件を見直したり、一晩おいてから決めると後悔が少なく済みそうです。"
+      ]
+    },
+    health: {
+      a: [
+        "体と心のコンディションを整えやすい日。早めにお風呂に入ったり、好きな香りを取り入れたりと、五感からリラックスさせてあげてください。",
+        "小さなケアが明日の自分を助けてくれるタイミング。水分補給や軽いストレッチなど、続けやすいことをひとつ選んで意識してみましょう。"
+      ],
+      b: [
+        "夜のスマホ時間を少し短くしてみるだけでも、睡眠の質が変わってきそうな日。寝る前に深呼吸を数回繰り返し、体の力を抜くイメージをしてみてください。",
+        "なんとなく疲れを感じたら、「今日は早めに寝る」と決めてしまうのもアリ。自分の限界を超える前に休むことが、明日のパフォーマンスにつながります。"
+      ],
+      c: [
+        "疲れがたまりやすいタイミング。無理に予定を詰め込まず、帰宅後は体をあたためることと、十分な睡眠を優先してあげてください。",
+        "気圧や気温の変化で、体調や気分が揺れやすいかもしれません。温かい飲み物や、やさしい味のご飯で、内側からじんわり整えていきましょう。"
+      ]
+    }
+  };
+
+  
+  
+function gradeFromScore(score) {
+    if (score >= 75) return 'a';
+    if (score >= 45) return 'b';
+    return 'c';
+  }
+
+  // 日付ごと・人ごとに、ある程度ばらけた文章を選ぶ
+  
+  var MESSAGE_SCHEDULE_CACHE = {};
+
+  function isLeapYear(year) {
+    return (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
+  }
+
+  function dayOfYear(date) {
+    var start = new Date(date.getFullYear(), 0, 1);
+    var diff = date - start;
+    return Math.floor(diff / 86400000); // 0-based
+  }
+
+  function ensureMessageSchedule(birthStr, category, grade, year) {
+    var key = (birthStr || 'none') + '|' + category + '|' + grade + '|' + year;
+    if (MESSAGE_SCHEDULE_CACHE[key]) return MESSAGE_SCHEDULE_CACHE[key];
+
+    var bank = (TEXT_BANK[category] && TEXT_BANK[category][grade]) || [];
+    var len  = bank.length;
+    if (!len) {
+      MESSAGE_SCHEDULE_CACHE[key] = [];
+      return MESSAGE_SCHEDULE_CACHE[key];
+    }
+
+    var daysInYear = isLeapYear(year) ? 366 : 365;
+    var rng        = makeRng(stableSeed('schedule|' + key));
+    var arr        = new Array(daysInYear);
+    var prev       = -1;
+    var prev2      = -1;
+
+    // 直近数日間は同じ文章を出さないためのウィンドウ
+    var windowSize = 32; // だいたい1ヶ月は同じ文言を避けるイメージ
+    var recent     = [];
+
+    for (var i = 0; i < daysInYear; i++) {
+      var candidate = Math.floor(rng() * len);
+
+      if (len > 1 && candidate === prev) {
+        // 直前と同じ文章を避ける
+        if (len === 2) {
+          candidate = 1 - prev;
+        } else {
+          var shift = 1 + Math.floor(rng() * (len - 1));
+          candidate = (candidate + shift) % len;
+        }
+      }
+
+      if (len >= 3 && i >= 2 && candidate === prev2) {
+        // ABAB... のような周期パターンを弱める
+        if (rng() < 0.6) {
+          var shift2 = 1 + Math.floor(rng() * (len - 1));
+          candidate  = (candidate + shift2) % len;
+          if (candidate === prev) {
+            candidate = (candidate + 1) % len;
+          }
+        }
+      }
+
+      // 直近 windowSize 日で使った文章をできるだけ避ける
+      if (len > windowSize) {
+        var guard = 0;
+        while (recent.indexOf(candidate) !== -1 && guard < 8) {
+          var shift3 = 1 + Math.floor(rng() * (len - 1));
+          candidate  = (candidate + shift3) % len;
+          guard++;
+        }
+      }
+
+      arr[i] = candidate;
+
+      recent.push(candidate);
+      if (recent.length > windowSize) {
+        recent.shift();
+      }
+
+      prev2 = prev;
+      prev  = candidate;
+    }
+
+    MESSAGE_SCHEDULE_CACHE[key] = arr;
+    return arr;
+  }
+
+  // 日付ごと・人ごとに、ある程度ばらけた文章を選ぶ
+  function pickText(category, score, birthStr, date) {
+    var g = gradeFromScore(score);
+    var bank = (TEXT_BANK[category] && TEXT_BANK[category][g]) || [];
+    if (!bank.length) return '';
+
+    // 日付が指定されていない場合は、従来どおり単純な乱数で
+    if (!date || !(date instanceof Date) || isNaN(date.getTime())) {
+      var seedSimple = stableSeed('msg|' + (birthStr || '') + '|' + category + '|' + g);
+      var rngSimple  = makeRng(seedSimple);
+      var idxSimple  = Math.floor(rngSimple() * bank.length);
+      return bank[idxSimple];
+    }
+
+    var year      = date.getFullYear();
+    var schedule  = ensureMessageSchedule(birthStr, category, g, year);
+    var dayIndex  = dayOfYear(date);
+
+    if (!schedule.length || dayIndex < 0 || dayIndex >= schedule.length) {
+      // 万一スケジュールがうまく取れなかった場合のフォールバック
+      var dateKey = date.toISOString().slice(0, 10);
+      var seed = stableSeed('msg-fallback|' + (birthStr || '') + '|' + category + '|' + g + '|' + dateKey);
+      var rng  = makeRng(seed);
+      var idx  = Math.floor(rng() * bank.length);
+      return bank[idx];
+    }
+
+    var idxFromSchedule = schedule[dayIndex] % bank.length;
+    return bank[idxFromSchedule] || '';
+  }
+
+function seasonPhrase(date, seedBase) {
+    if (!date || !(date instanceof Date) || isNaN(date.getTime())) return '';
+    var month = date.getMonth() + 1;
+    var rng = makeRng(stableSeed('season|' + month + '|' + seedBase));
+    var arr;
+    if (month === 12 || month === 1 || month === 2) {
+      arr = [
+        "冷たい空気の中にも、静かに整える力が流れています。温かい飲み物でほっと一息つく時間を増やしてみてください。",
+        "一年の締めくくりや始まりを意識しやすい季節。小さな区切りをつけることで、心にも余白が生まれそうです。"
+      ];
+    } else if (month >= 3 && month <= 5) {
+      arr = [
+        "春の空気がゆっくりと流れ込み、気持ちも少しずつほぐれやすいタイミングです。予定の中に、小さな楽しみを混ぜてみてください。",
+        "新しいことを始めたくなる季節。全部を一気に変えようとせず、「ひとつだけ試してみる」くらいがちょうど良さそうです。"
+      ];
+    } else if (month >= 6 && month <= 8) {
+      arr = [
+        "暑さで体力を奪われやすい季節。無理を通すより、こまめな休憩と水分補給を味方につけてあげてください。",
+        "日差しが強いぶん、心も外に向きやすい時期。疲れを感じたら、涼しい場所で一息ついてから次の予定へ。"
+      ];
+    } else {
+      arr = [
+        "空気が少しずつ落ち着いてくる季節。ゆっくりと振り返る時間をとることで、次に進むヒントが見つかりそうです。",
+        "日々の変化を感じやすい季節。小さな違いに気づくほど、明日への楽しみも増えていきます。"
+      ];
+    }
+    var idx = Math.floor(rng() * arr.length);
+    return arr[idx] || '';
+  }
+
+  function aspectScore(diff) {
+    var aspects = [
+      { angle: 0,   sign:  1.0 },
+      { angle: 60,  sign:  0.6 },
+      { angle: 120, sign:  1.0 },
+      { angle: 90,  sign: -0.8 },
+      { angle: 180, sign: -0.8 }
+    ];
+    var sigma = 35;
+    var rad2 = 2 * sigma * sigma;
+    var score = 0;
+    for (var i = 0; i < aspects.length; i++) {
+      var a = aspects[i];
+      var d = Math.abs(diff - a.angle);
+      if (d > 180) d = 360 - d;
+      var w = Math.exp(-(d * d) / rad2);
+      score += a.sign * w;
+    }
+    score -= 0.2435;
+    return score;
+  }
+
+  function clampNorm(x) {
+    if (x < -1) return -1;
+    if (x >  1) return  1;
+    return x;
+  }
+
+  function softenBackground(bg, negScale, posScale) {
+    if (bg < 0) return bg * negScale;
+    if (bg > 0) return bg * posScale;
+    return bg;
+  }
+
+  function applyDayJitter(n, category, date, strength) {
+    if (!date || !(date instanceof Date) || isNaN(date.getTime())) return n;
+    var key = category + '|' +
+      date.getFullYear() + '-' +
+      (date.getMonth() + 1) + '-' +
+      date.getDate();
+    var rng = makeRng(stableSeed('dayJ|' + key));
+    var amp = strength;
+    var jitter = (rng() - 0.5) * 2 * amp;
+    return clampNorm(n + jitter);
+  }
+
+  function mapNormToPercent(n, minP, maxP) {
+    // n は -1〜+1 の正規化値
+    if (n < -1) n = -1;
+    if (n >  1) n =  1;
+
+    // 両端を少し持ち上げるカーブ
+    var z = (n < 0) ? -Math.sqrt(-n) : Math.sqrt(n);
+    var mid = (minP + maxP) / 2;
+    var amp = (maxP - minP) / 2;
+    var p   = mid + amp * z;
+
+    // トップクラスの日だけ 100% に丸める
+    // 0.88 は「かなり良い日」だけに絞るイメージです
+    if (n > 0.88) {
+      p = 100;
+    }
+
+    if (p < minP) p = minP;
+    if (p > 100) p = 100;
+    return Math.round(p);
+  }
+
+  function parseDateInput(str) {
+    if (!str) return null;
+    var m = str.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!m) return null;
+    var y  = parseInt(m[1], 10);
+    var mo = parseInt(m[2], 10);
+    var d  = parseInt(m[3], 10);
+    if (!y || !mo || !d) return null;
+    return new Date(y, mo - 1, d, 12, 0, 0);
+  }
+
+  function approxEclLon(body, date) {
+    var name = String(body || '').split('.').pop();
+    var table = {
+      Sun:     { period: 365.2422, phase: 280.46 },
+      Moon:    { period: 27.3217,  phase: 218.32 },
+      Mercury: { period: 87.969,   phase: 60.75 },
+      Venus:   { period: 224.701,  phase: 181.98 },
+      Mars:    { period: 686.98,   phase: 355.43 },
+      Jupiter: { period: 4332.59,  phase: 34.35 },
+      Saturn:  { period: 10759.22, phase: 50.08 }
+    };
+    var cfg = table[name] || table.Sun;
+    var epoch = new Date(2000, 0, 1, 12, 0, 0);
+    var days = (date - epoch) / 86400000;
+    var lon = (cfg.phase + (days * 360 / cfg.period)) % 360;
+    if (lon < 0) lon += 360;
+    return lon;
+  }
+
+  function eclLon(body, date) {
+    try {
+      if (typeof Astronomy !== 'undefined' && Astronomy.AstroTime && Astronomy.GeoVector && Astronomy.Ecliptic) {
+        var time = new Astronomy.AstroTime(date);
+        var vec  = Astronomy.GeoVector(body, time, true);
+        var ecl  = Astronomy.Ecliptic(vec);
+        if (typeof ecl.elon === 'number' && isFinite(ecl.elon)) return ecl.elon;
+      }
+    } catch (e) {
+      console.warn('Astronomy fallback:', e);
+    }
+    return approxEclLon(body, date);
+  }
+
+  function fireConfetti() {
+    var canvas = document.getElementById('confettiCanvas');
+    if (!canvas) return;
+    var ctx = canvas.getContext('2d');
+    var w = (canvas.width  = window.innerWidth);
+    var h = (canvas.height = window.innerHeight);
+    var COUNT = 150;
+    var confs = [];
+    for (var i = 0; i < COUNT; i++) {
+      confs.push({
+        x: Math.random() * w,
+        y: Math.random() * -h,
+        vy: 2 + Math.random() * 3,
+        vx: (Math.random() - 0.5) * 1.5,
+        size: 4 + Math.random() * 4,
+        rot: Math.random() * Math.PI * 2,
+        vr: (Math.random() - 0.5) * 0.2
+      });
+    }
+    var start = performance.now();
+    function loop(now) {
+      var t = now - start;
+      ctx.clearRect(0, 0, w, h);
+      for (var i = 0; i < confs.length; i++) {
+        var c = confs[i];
+        c.y += c.vy;
+        c.x += c.vx;
+        c.rot += c.vr;
+        if (c.y > h + 20) {
+          c.y = -20;
+          c.x = Math.random() * w;
+        }
+        ctx.save();
+        ctx.translate(c.x, c.y);
+        ctx.rotate(c.rot);
+        ctx.fillStyle = 'hsla(' + (260 + Math.random() * 40) + ',70%,70%,0.9)';
+        ctx.fillRect(-c.size / 2, -c.size / 2, c.size, c.size);
+        ctx.restore();
+      }
+      if (t < 2500) {
+        requestAnimationFrame(loop);
+      } else {
+        ctx.clearRect(0, 0, w, h);
+      }
+    }
+    requestAnimationFrame(loop);
+  }
+
+  function getResultSections() {
+    var result = document.getElementById('result');
+    if (!result || !result.innerHTML.trim()) return [];
+    var titles = Array.from(result.querySelectorAll('.section-title'));
+    return titles.map(function (titleEl) {
+      var label = titleEl.querySelector('.label');
+      var percent = titleEl.querySelector('.percent');
+      var icon = titleEl.querySelector('.icon');
+      var textEl = titleEl.nextElementSibling && titleEl.nextElementSibling.classList.contains('text-block')
+        ? titleEl.nextElementSibling
+        : null;
+      return {
+        icon: icon ? icon.textContent.trim() : '',
+        label: label ? label.textContent.trim() : titleEl.textContent.trim(),
+        percent: percent ? percent.textContent.trim() : '',
+        text: textEl ? textEl.textContent.trim() : ''
+      };
+    }).filter(function (item) { return item.label || item.text; });
+  }
+
+  function drawWrappedText(ctx, text, x, y, maxWidth, lineHeight, maxLines) {
+    var line = '';
+    var lines = 0;
+    text = String(text || '').replace(/\s+/g, ' ').trim();
+    for (var i = 0; i < text.length; i++) {
+      var test = line + text.charAt(i);
+      if (ctx.measureText(test).width > maxWidth && line) {
+        ctx.fillText(line, x, y);
+        y += lineHeight;
+        lines++;
+        line = text.charAt(i);
+        if (maxLines && lines >= maxLines - 1) {
+          var rest = text.slice(i + 1);
+          while (ctx.measureText(line + '…').width > maxWidth && line.length > 0) {
+            line = line.slice(0, -1);
+          }
+          ctx.fillText(line + (rest ? '…' : ''), x, y);
+          return y + lineHeight;
+        }
+      } else {
+        line = test;
+      }
+    }
+    if (line) {
+      ctx.fillText(line, x, y);
+      y += lineHeight;
+    }
+    return y;
+  }
+
+  function roundRectPath(ctx, x, y, w, h, r) {
+    var rr = Math.min(r, w / 2, h / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + rr, y);
+    ctx.arcTo(x + w, y, x + w, y + h, rr);
+    ctx.arcTo(x + w, y + h, x, y + h, rr);
+    ctx.arcTo(x, y + h, x, y, rr);
+    ctx.arcTo(x, y, x + w, y, rr);
+    ctx.closePath();
+  }
+
+  function renderFortuneCardCanvas() {
+    var sections = getResultSections();
+    if (!sections.length) return null;
+    var canvas = document.createElement('canvas');
+    var size = 1080;
+    canvas.width = size;
+    canvas.height = size;
+    var ctx = canvas.getContext('2d', { alpha: false });
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, size, size);
+
+    var grad = ctx.createLinearGradient(0, 0, size, size);
+    grad.addColorStop(0, '#F6F0FF');
+    grad.addColorStop(1, '#FFFFFF');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, size, size);
+
+    ctx.fillStyle = '#7C4DFF';
+    ctx.font = '700 58px -apple-system, BlinkMacSystemFont, "Noto Sans JP", sans-serif';
+    ctx.fillText('🪐 100% 星占い', 70, 92);
+
+    var birth = document.getElementById('birth').value || '';
+    var target = document.getElementById('targetDate').value || '今日';
+    ctx.fillStyle = '#6B6380';
+    ctx.font = '400 24px -apple-system, BlinkMacSystemFont, "Noto Sans JP", sans-serif';
+    ctx.fillText('Birth: ' + birth + ' / Day: ' + target, 74, 132);
+
+    var y = 178;
+    sections.forEach(function (s, idx) {
+      var boxH = idx === 0 ? 170 : 148;
+      if (idx >= 4) boxH = 132;
+      roundRectPath(ctx, 56, y, 968, boxH, 30);
+      ctx.fillStyle = idx === 0 ? '#F1E9FF' : '#F8F5FF';
+      ctx.fill();
+
+      ctx.fillStyle = '#7C4DFF';
+      ctx.font = '700 33px -apple-system, BlinkMacSystemFont, "Noto Sans JP", sans-serif';
+      ctx.fillText((s.icon ? s.icon + ' ' : '') + s.label, 88, y + 48);
+      if (s.percent) {
+        ctx.fillStyle = '#C06FD8';
+        ctx.textAlign = 'right';
+        ctx.fillText(s.percent, 990, y + 48);
+        ctx.textAlign = 'left';
+      }
+
+      ctx.fillStyle = '#4D485C';
+      ctx.font = '400 28px -apple-system, BlinkMacSystemFont, "Noto Sans JP", sans-serif';
+      drawWrappedText(ctx, s.text, 88, y + 88, 880, 39, idx === 0 ? 3 : 2);
+      y += boxH + 18;
+    });
+
+    ctx.fillStyle = '#9A91AD';
+    ctx.font = '400 22px -apple-system, BlinkMacSystemFont, "Noto Sans JP", sans-serif';
+    ctx.fillText('Mothership / A massage to you!', 70, 1032);
+    return canvas;
+  }
+
+  async function captureResultCanvas() {
+    var result = document.getElementById('result');
+    if (!result || !result.innerHTML.trim()) return null;
+    var card = document.getElementById('cardRoot');
+    if (typeof html2canvas !== 'undefined') {
+      try {
+        return await html2canvas(card, {
+          backgroundColor: '#ffffff',
+          scale: window.devicePixelRatio > 1 ? 2 : 1
+        });
+      } catch (e) {
+        console.warn('html2canvas fallback:', e);
+      }
+    }
+    return renderFortuneCardCanvas();
+  }
+
+  async function saveResultImage() {
+    var result = document.getElementById('result');
+    if (!result || !result.innerHTML.trim()) {
+      alert('まず「この日の運勢を見る」で結果を表示してください。');
+      return;
+    }
+    var birthStr  = document.getElementById('birth').value || 'birth';
+    var targetStr = document.getElementById('targetDate').value;
+    var fileDate = targetStr || 'today';
+    var fileBirth = birthStr.replace(/-/g, '');
+    var filename = 'horoscope_' + fileDate.replace(/-/g, '') + '_' + fileBirth + '.jpg';
+    var canvas = await captureResultCanvas();
+    if (!canvas) {
+      alert('画像化に失敗しました。');
+      return;
+    }
+    var dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+    notifyMothershipImage(dataUrl, { title: '100％星占い', note: fileDate });
+    if (EMBED_MODE) return;
+    var link = document.createElement('a');
+    link.href = dataUrl;
+    link.download = filename;
+    link.click();
+  }
+
+  function calc() {
+    try {
+      var birthStr  = document.getElementById('birth').value;
+      var targetStr = document.getElementById('targetDate').value;
+
+      if (!birthStr) {
+        alert('生年月日を入力してください。');
+        return;
+      }
+      var birthDate = parseDateInput(birthStr);
+      if (!birthDate) {
+        alert('生年月日の形式が正しくありません。');
+        return;
+      }
+
+      var now = new Date();
+      var targetDate = parseDateInput(targetStr);
+      if (!targetDate) {
+        targetDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12, 0, 0);
+      }
+
+      var targetKey =
+        targetDate.getFullYear() + '-' +
+        (targetDate.getMonth() + 1) + '-' +
+        targetDate.getDate();
+      var seedBase = birthStr + '|' + targetKey;
+
+      var Body = (typeof Astronomy !== 'undefined' && Astronomy.Body) ? Astronomy.Body : {
+        Sun: 'Sun',
+        Moon: 'Moon',
+        Mercury: 'Mercury',
+        Venus: 'Venus',
+        Mars: 'Mars',
+        Jupiter: 'Jupiter',
+        Saturn: 'Saturn'
+      };
+      var Sun  = Body.Sun;
+      var Moon = Body.Moon;
+      var Merc = Body.Mercury;
+      var Ven  = Body.Venus;
+      var Mars = Body.Mars;
+      var Jup  = Body.Jupiter;
+      var Sat  = Body.Saturn;
+
+      var bodies = [Sun, Moon, Merc, Ven, Mars, Jup, Sat];
+
+      var nat = {};
+      for (var i = 0; i < bodies.length; i++) {
+        var b = bodies[i];
+        nat[b] = eclLon(b, birthDate);
+      }
+
+      function computeNormsForDate(date) {
+        var cur = {};
+        for (var i = 0; i < bodies.length; i++) {
+          var b = bodies[i];
+          cur[b] = eclLon(b, date);
+        }
+        function diffLonLocal(body) {
+          var d = cur[body] - nat[body];
+          d = d % 360;
+          if (d < 0) d += 360;
+          return d;
+        }
+        function ALocal(body) {
+          return aspectScore(diffLonLocal(body));
+        }
+
+        var rawBgTotal =
+          0.25 * ALocal(Jup) +
+          0.20 * ALocal(Sat) +
+          0.20 * ALocal(Sun);
+        var rawFastTotal =
+          1.5 * ALocal(Moon) +
+          1.1 * ALocal(Merc) +
+          1.1 * ALocal(Ven)  +
+          1.2 * ALocal(Mars);
+
+        var nBgTotal   = clampNorm(rawBgTotal   * 0.40);
+        var nFastTotal = clampNorm(rawFastTotal * 0.45);
+        nBgTotal = softenBackground(nBgTotal, 0.4, 0.4);
+        var nTotalPlanet = clampNorm(nFastTotal * 0.95 + nBgTotal * 0.05);
+
+        var rawBgLove =
+          0.35 * ALocal(Jup);
+        var rawFastLove =
+          1.6 * ALocal(Ven) +
+          1.4 * ALocal(Moon) +
+          0.9 * ALocal(Merc);
+
+        var nBgLove   = clampNorm(rawBgLove   * 0.45);
+        var nFastLove = clampNorm(rawFastLove * 0.45);
+        nBgLove = softenBackground(nBgLove, 0.4, 0.4);
+        var nLovePlanet = clampNorm(nFastLove * 0.95 + nBgLove * 0.05);
+
+        var rawBgMoney =
+          0.45 * ALocal(Jup) +
+          0.30 * ALocal(Sat);
+        var rawFastMoney =
+          1.0 * ALocal(Ven) +
+          0.8 * ALocal(Mars) +
+          0.6 * ALocal(Merc);
+
+        var nBgMoney   = clampNorm(rawBgMoney   * 0.35);
+        var nFastMoney = clampNorm(rawFastMoney * 0.45);
+        nBgMoney = softenBackground(nBgMoney, 0.4, 0.4);
+        var nMoneyPlanet = clampNorm(nFastMoney * 0.95 + nBgMoney * 0.05);
+
+        var rawBgWork =
+          0.50 * ALocal(Sat);
+        var rawFastWork =
+          1.1 * ALocal(Mars) +
+          0.9 * ALocal(Merc) +
+          0.5 * ALocal(Moon) +
+          0.4 * ALocal(Sun);
+
+        var nBgWork   = clampNorm(rawBgWork   * 0.45);
+        var nFastWork = clampNorm(rawFastWork * 0.45);
+        nBgWork = softenBackground(nBgWork, 0.4, 0.4);
+        var nWorkPlanet = clampNorm(nFastWork * 0.95 + nBgWork * 0.05);
+
+        var rawBgHealth =
+          0.30 * ALocal(Jup);
+        var rawFastHealth =
+          1.3 * ALocal(Moon) +
+          0.7 * ALocal(Sun) +
+          0.4 * ALocal(Ven);
+
+        var nBgHealth   = clampNorm(rawBgHealth   * 0.45);
+        var nFastHealth = clampNorm(rawFastHealth * 0.45);
+        nBgHealth = softenBackground(nBgHealth, 0.4, 0.4);
+        var nHealthPlanet = clampNorm(nFastHealth * 0.95 + nBgHealth * 0.05);
+
+        return {
+          total:  nTotalPlanet,
+          love:   nLovePlanet,
+          money:  nMoneyPlanet,
+          work:   nWorkPlanet,
+          health: nHealthPlanet
+        };
+      }
+
+      var todayNorms = computeNormsForDate(targetDate);
+
+      // --- 年内（±90日）での位置づけ ---
+      var yearStats = {
+        total:  { sum: 0, min:  9999, max: -9999, count: 0 },
+        love:   { sum: 0, min:  9999, max: -9999, count: 0 },
+        money:  { sum: 0, min:  9999, max: -9999, count: 0 },
+        work:   { sum: 0, min:  9999, max: -9999, count: 0 },
+        health: { sum: 0, min:  9999, max: -9999, count: 0 }
+      };
+
+      for (var oy = -90; oy <= 90; oy += 3) {
+        var dYear = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
+        dYear.setDate(dYear.getDate() + oy);
+        var ny = computeNormsForDate(dYear);
+
+        yearStats.total.sum   += ny.total;
+        yearStats.total.min    = Math.min(yearStats.total.min,  ny.total);
+        yearStats.total.max    = Math.max(yearStats.total.max,  ny.total);
+        yearStats.total.count += 1;
+
+        yearStats.love.sum    += ny.love;
+        yearStats.love.min     = Math.min(yearStats.love.min,   ny.love);
+        yearStats.love.max     = Math.max(yearStats.love.max,   ny.love);
+        yearStats.love.count  += 1;
+
+        yearStats.money.sum   += ny.money;
+        yearStats.money.min    = Math.min(yearStats.money.min,  ny.money);
+        yearStats.money.max    = Math.max(yearStats.money.max,  ny.money);
+        yearStats.money.count += 1;
+
+        yearStats.work.sum    += ny.work;
+        yearStats.work.min     = Math.min(yearStats.work.min,   ny.work);
+        yearStats.work.max     = Math.max(yearStats.work.max,   ny.work);
+        yearStats.work.count  += 1;
+
+        yearStats.health.sum  += ny.health;
+        yearStats.health.min   = Math.min(yearStats.health.min, ny.health);
+        yearStats.health.max   = Math.max(yearStats.health.max, ny.health);
+        yearStats.health.count+= 1;
+      }
+
+      function yearNorm(valueToday, stat) {
+        if (!stat || stat.count <= 1) return 0;
+        var mean = stat.sum / stat.count;
+        var halfRange = (stat.max - stat.min) / 2;
+        if (halfRange < 0.05) return 0;
+        var n = (valueToday - mean) / halfRange;
+        return clampNorm(n);
+      }
+
+      var nTotalGlobal  = yearNorm(todayNorms.total,  yearStats.total);
+      var nLoveGlobal   = yearNorm(todayNorms.love,   yearStats.love);
+      var nMoneyGlobal  = yearNorm(todayNorms.money,  yearStats.money);
+      var nWorkGlobal   = yearNorm(todayNorms.work,   yearStats.work);
+      var nHealthGlobal = yearNorm(todayNorms.health, yearStats.health);
+
+      // --- 近傍（±16日）のローカル比較 ---
+      var windowDays = 16;
+      var sum  = { total:0, love:0, money:0, work:0, health:0 };
+      var sum2 = { total:0, love:0, money:0, work:0, health:0 };
+      var count = 0;
+
+      for (var offset = -windowDays; offset <= windowDays; offset++) {
+        var d = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
+        d.setDate(d.getDate() + offset);
+        var n = computeNormsForDate(d);
+        sum.total  += n.total;   sum2.total  += n.total  * n.total;
+        sum.love   += n.love;    sum2.love   += n.love   * n.love;
+        sum.money  += n.money;   sum2.money  += n.money  * n.money;
+        sum.work   += n.work;    sum2.work   += n.work   * n.work;
+        sum.health += n.health;  sum2.health += n.health * n.health;
+        count++;
+      }
+
+      function localFromWindow(valueToday, s, s2) {
+        if (count <= 1) return 0;
+        var mean = s / count;
+        var variance = s2 / count - mean * mean;
+        if (variance < 1e-6) return 0;
+        var std = Math.sqrt(variance);
+        if (std < 0.05) return 0;
+        var z = (valueToday - mean) / (2 * std);
+        return clampNorm(z);
+      }
+
+      var nTotalLocal  = localFromWindow(todayNorms.total,  sum.total,  sum2.total);
+      var nLoveLocal   = localFromWindow(todayNorms.love,   sum.love,   sum2.love);
+      var nMoneyLocal  = localFromWindow(todayNorms.money,  sum.money,  sum2.money);
+      var nWorkLocal   = localFromWindow(todayNorms.work,   sum.work,   sum2.work);
+      var nHealthLocal = localFromWindow(todayNorms.health, sum.health, sum2.health);
+
+      function mix(global, local) {
+        if (local === 0) {
+          return clampNorm(global);
+        }
+        var g = 0.25 * global + 0.75 * local;
+        return clampNorm(g);
+      }
+
+      var nTotal  = mix(nTotalGlobal,  nTotalLocal);
+      var nLove   = mix(nLoveGlobal,   nLoveLocal);
+      var nMoney  = mix(nMoneyGlobal,  nMoneyLocal);
+      var nWork   = mix(nWorkGlobal,   nWorkLocal);
+      var nHealth = mix(nHealthGlobal, nHealthLocal);
+
+      nTotal  = applyDayJitter(nTotal,  'total',  targetDate, 0.18);
+      nLove   = applyDayJitter(nLove,   'love',   targetDate, 0.18);
+      nMoney  = applyDayJitter(nMoney,  'money',  targetDate, 0.18);
+      nWork   = applyDayJitter(nWork,   'work',   targetDate, 0.18);
+      nHealth = applyDayJitter(nHealth, 'health', targetDate, 0.18);
+
+      var total  = mapNormToPercent(nTotal,  15, 95);
+      var love   = mapNormToPercent(nLove,   15, 95);
+      var money  = mapNormToPercent(nMoney,  15, 95);
+      var work   = mapNormToPercent(nWork,   15, 95);
+      var health = mapNormToPercent(nHealth, 15, 95);
+
+      var overallText = pickText('total',  total,  birthStr,  targetDate);
+      var loveText    = pickText('love',   love,   birthStr,  targetDate);
+      var moneyText   = pickText('money',  money,  birthStr,  targetDate);
+      var workText    = pickText('work',   work,   birthStr,  targetDate);
+      var healthText  = pickText('health', health, birthStr,  targetDate);
+      var seasonText  = seasonPhrase(targetDate, seedBase);
+
+      var html = '';
+
+      html += '<div class="section-title">' +
+                '<span class="icon">🪐</span>' +
+                '<span class="label">今日の総合運</span>' +
+                '<span class="percent">' + total + '%</span>' +
+              '</div>';
+      var totalBlock = overallText;
+      if (seasonText) {
+        totalBlock += ' ' + seasonText;
+      }
+      html += '<div class="text-block">' + totalBlock + '</div>';
+
+      html += '<div class="section-title">' +
+                '<span class="icon">💞</span>' +
+                '<span class="label">恋愛</span>' +
+                '<span class="percent">' + love + '%</span>' +
+              '</div>';
+      html += '<div class="text-block">' + loveText + '</div>';
+
+      html += '<div class="section-title">' +
+                '<span class="icon">💼</span>' +
+                '<span class="label">仕事</span>' +
+                '<span class="percent">' + work + '%</span>' +
+              '</div>';
+      html += '<div class="text-block">' + workText + '</div>';
+
+      html += '<div class="section-title">' +
+                '<span class="icon">💰</span>' +
+                '<span class="label">金運</span>' +
+                '<span class="percent">' + money + '%</span>' +
+              '</div>';
+      html += '<div class="text-block">' + moneyText + '</div>';
+
+      html += '<div class="section-title">' +
+                '<span class="icon">💗</span>' +
+                '<span class="label">健康</span>' +
+                '<span class="percent">' + health + '%</span>' +
+              '</div>';
+      html += '<div class="text-block">' + healthText + '</div>';
+
+      var resultEl = document.getElementById('result');
+      if (resultEl) {
+        resultEl.innerHTML = html;
+      }
+
+      var saveBtn = document.getElementById('saveBtn');
+      if (saveBtn) {
+        saveBtn.style.display = EMBED_MODE ? 'none' : 'block';
+      }
+
+      var birthdayEl = document.getElementById('birthdayMessage');
+      if (birthdayEl) {
+        birthdayEl.textContent = '';
+      }
+
+      var now2 = new Date();
+      var isTodayTarget =
+        targetDate.getFullYear() === now2.getFullYear() &&
+        targetDate.getMonth()    === now2.getMonth() &&
+        targetDate.getDate()     === now2.getDate();
+
+      var isTodayBirthday =
+        birthDate.getMonth() === now2.getMonth() &&
+        birthDate.getDate()  === now2.getDate();
+
+      if (isTodayTarget && isTodayBirthday) {
+        if (birthdayEl) {
+          birthdayEl.textContent =
+            '🎂 お誕生日おめでとうございます。今日のあなたに、やさしい流れがありますように。';
+        }
+        fireConfetti();
+      }
+    } catch (e) {
+      console.error('calc error:', e);
+      alert('内部エラーが発生しました（コンソールに詳細が出ています）。');
+    }
+  }
+
+  window.calc = calc;
+  window.saveResultImage = saveResultImage;
+  window.__mothershipGetAsset = async function (options) {
+    var result = document.getElementById('result');
+    var shouldAutoCalc = !options || options.autoCalc !== false;
+    if (result && !result.innerHTML.trim() && shouldAutoCalc && typeof calc === 'function') {
+      calc();
+      await new Promise(function (resolve) { setTimeout(resolve, 180); });
+    }
+    result = document.getElementById('result');
+    if (!result || !result.innerHTML.trim()) return null;
+    var targetStr = document.getElementById('targetDate').value || 'today';
+    var canvas = await captureResultCanvas();
+    if (!canvas) return null;
+    var imageData = canvas.toDataURL('image/jpeg', 0.92);
+    return { kind: 'image', imageData, title: '100％星占い', note: targetStr };
+  };
+
+})(); 
+</script>
+</body>
+</html>

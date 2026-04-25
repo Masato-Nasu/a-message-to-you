@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+<rect width="128" height="128" rx="28" fill="#9b6a3d"/>
+<circle cx="64" cy="64" r="46" fill="#f8ede0"/>
+<circle cx="64" cy="64" r="35" fill="#4b3625"/>
+<circle cx="64" cy="64" r="22" fill="#2f231a"/>
+<rect x="48" y="18" width="32" height="8" rx="4" fill="#2f231a"/>
+<circle cx="95" cy="22" r="6" fill="#f2c57d"/>
+<text x="64" y="102" text-anchor="middle" font-size="22" font-family="Arial, Helvetica, sans-serif" font-weight="700" fill="#f8ede0">HC</text>
+</svg>

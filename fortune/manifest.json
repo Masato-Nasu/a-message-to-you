@@ -1,0 +1,21 @@
+{
+  "name": "本格星占い",
+  "short_name": "星占い",
+  "start_url": "/horoscope-100pct/index.html",
+  "display": "standalone",
+  "background_color": "#fafafa",
+  "theme_color": "#6b46c1",
+  "scope": "/horoscope-100pct/",
+  "icons": [
+    {
+      "src": "/horoscope-100pct/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/horoscope-100pct/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

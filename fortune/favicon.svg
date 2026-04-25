@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <rect width="256" height="256" fill="#060812"/>
+  <text x="50%" y="54%" text-anchor="middle" dominant-baseline="central"
+        font-family="Helvetica, Arial, -apple-system, BlinkMacSystemFont, system-ui, sans-serif"
+        font-size="72" font-weight="700" fill="#ffffff">
+    100%
+  </text>
+</svg>

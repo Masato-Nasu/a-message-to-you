@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#05110d">
+  <meta name="description" content="CODE 904 / MALFUNCTION / MEAN SLIPPER — retro CRT PWA that generates bilingual pseudo-manuals from camera or uploaded images.">
+  <title>CODE 904 / MALFUNCTION / MEAN SLIPPER</title>
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="./icons/icon-192.png">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="auth-overlay" id="auth-overlay">
+    <div class="auth-card">
+      <div class="auth-code">CODE 904</div>
+      <h2>MALFUNCTION</h2>
+      <div class="auth-sub">MEAN SLIPPER</div>
+      <p class="auth-text">
+        PASSWORD REQUIRED / 合言葉が必要です<br>
+        OpenAI API key remains on Cloudflare secret.
+      </p>
+      <form id="auth-form" class="auth-form">
+        <label class="auth-label" for="password-input">PASSWORD / 合言葉</label>
+        <input id="password-input" class="auth-input" type="password" autocomplete="current-password" placeholder="Enter password">
+        <label class="auth-remember"><input id="remember-password" type="checkbox" checked> REMEMBER ON THIS DEVICE / この端末で保持</label>
+        <button class="button auth-button" type="submit">UNLOCK / 解錠</button>
+      </form>
+      <div class="auth-error hidden" id="auth-error"></div>
+      <div class="auth-small" id="auth-small">Access is controlled on the server. / 判定はサーバー側です。</div>
+    </div>
+  </div>
+
+  <div class="app-shell app-locked" id="app-shell">
+    <div class="scanline"></div>
+    <div class="vignette"></div>
+
+    <aside class="panel panel-left">
+      <div class="brand">
+        <div class="code">CODE 904</div>
+        <h1>MALFUNCTION</h1>
+        <div class="sub">MEAN SLIPPER</div>
+        <p class="intro">
+          English main display / 日本語補助表示<br>
+          Cloudflare Pages + Functions + OpenAI API
+        </p>
+      </div>
+
+      <section class="status-box">
+        <div class="row"><span>SYSTEM STATUS</span><strong id="status-en">LOCKED</strong></div>
+        <div class="status-jp" id="status-jp">認証待機中</div>
+        <div class="row row-spaced"><span>PLAYBACK</span><strong id="timecode">00:00:00:00</strong></div>
+        <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+        <div class="small-note" id="backend-note">Backend: locked / バックエンド: ロック中</div>
+      </section>
+
+      <section class="controls">
+        <label class="button" for="file-input">LOAD IMAGE / 画像読込</label>
+        <input id="file-input" type="file" accept="image/*" hidden>
+
+        <div class="button-grid">
+          <button class="button" id="camera-start">CAMERA</button>
+          <button class="button" id="camera-capture" disabled>CAPTURE</button>
+        </div>
+
+        <div class="button-grid">
+          <button class="button mode-button active" id="mode-object" data-mode="object">OBJECT</button>
+          <button class="button mode-button" id="mode-subject" data-mode="subject">SUBJECT</button>
+        </div>
+
+        <button class="button" id="scan-button" disabled>SCAN / 走査</button>
+
+        <div class="button-grid">
+          <button class="button" id="export-txt" disabled>EXPORT TXT</button>
+          <button class="button" id="export-json" disabled>EXPORT JSON</button>
+          <button class="button button-wide" id="export-jpeg" disabled>JPEG CARD</button>
+        </div>
+
+        <div class="button-grid">
+          <button class="button" id="camera-stop" disabled>STOP</button>
+          <button class="button" id="reset-button">RESET</button>
+        </div>
+
+        <button class="button subtle-button" id="lock-button">LOCK / 再施錠</button>
+      </section>
+
+      <section class="note-box">
+        <div class="section-label">MODE NOTE / モード注記</div>
+        <div id="mode-note-en">OBJECT MODE ACTIVE. SEMANTIC STABILITY NOT GUARANTEED.</div>
+        <div id="mode-note-jp">物体モード有効。意味の安定性は保証されません。</div>
+      </section>
+
+      <section class="error-box hidden" id="error-box"></section>
+    </aside>
+
+    <main class="panel panel-center">
+      <div class="hud-label top-left" id="hud-mode">OBJECT MANUAL / 物体説明</div>
+      <div class="hud-label top-right" id="hud-signal">NO SIGNAL / 入力待機</div>
+      <div class="hud-label bottom-left" id="hud-status">LOCKED</div>
+      <div class="hud-label bottom-right" id="hud-timecode-2">00:00:00:00</div>
+
+      <div class="camera-tip" id="camera-tip">Unlock first. / 先に解錠してください。</div>
+
+      <div class="preview-surface" id="preview-surface">
+        <img id="preview-image" class="hidden" alt="Target preview">
+        <video id="preview-video" class="hidden" autoplay playsinline muted></video>
+        <div class="preview-empty" id="preview-empty"></div>
+        <div class="scan-flash hidden" id="scan-flash" aria-hidden="true"></div>
+      </div>
+
+      <div class="hud-reticle reticle-a"></div>
+      <div class="hud-reticle reticle-b"></div>
+      <div class="hud-crosshair"></div>
+
+      <div class="capture-bottom-ui">
+        <div class="tap-hint" id="tap-hint">TAP SCREEN TO CAPTURE / 画面タップで撮影</div>
+        <button class="capture-button-bottom" id="capture-bottom" disabled aria-label="Capture frame">
+          <span class="capture-button-core"></span>
+        </button>
+      </div>
+    </main>
+
+    <aside class="panel panel-right">
+      <section class="output-header">
+        <div class="section-label">INSTRUCTION OUTPUT / 説明出力</div>
+      </section>
+
+      <section class="notice-box">
+        <div class="section-label">NOTICE / 注意</div>
+        <div id="notice-en">Locked.</div>
+        <div id="notice-jp">ロック中。</div>
+      </section>
+
+      <section class="output-scroll" id="output-scroll">
+        <div class="output-placeholder" id="output-placeholder">
+          Unlock, then press SCAN after loading an image.<br>
+          解錠後、画像を読み込んでから SCAN を押してください。
+        </div>
+        <div id="output-sections"></div>
+      </section>
+
+      <section class="diag-box">
+        <div class="section-label">DIAGNOSTIC LABELS / 診断ラベル</div>
+        <div id="diag-list"></div>
+      </section>
+
+      <section class="signal-box">
+        <div class="section-label">SIGNAL / 信号</div>
+        <svg viewBox="0 0 260 60" class="signal-svg" aria-hidden="true">
+          <path d="M0,30 L18,30 L28,10 L38,48 L48,22 L58,33 L68,28 L78,29 L88,11 L98,49 L108,23 L118,29 L128,30 L138,15 L148,44 L158,18 L168,33 L178,29 L188,28 L198,13 L208,47 L218,24 L228,30 L238,29 L260,30"></path>
+        </svg>
+      </section>
+    </aside>
+  </div>
+
+  <script src="./app.js" type="module"></script>
+</body>
+</html>
