@@ -130,10 +130,6 @@ Mothership には、小さな実験的アプリが入っています。
 
 ![screenshot3](screenshot3.png)
 
-### 書き出した HTML
-
-![screenshot4](screenshot4.png)
-
 ---
 
 ## 作る側と受け取る側
@@ -168,32 +164,6 @@ Mothership は、できるだけローカルで完結する小さなツールと
 - PWA
 - Service Worker
 - Cloudflare Pages
-
----
-
-## デプロイ
-
-Cloudflare Pages へのデプロイ例です。
-
-```bash
-npx wrangler pages deploy . --project-name mothership
-```
-
----
-
-## 現在の状態
-
-最初の完成版です。
-
-現在のバージョンでは、以下に対応しています。
-
-- Room ベースの構成
-- アプリ出力の Room 反映
-- 動画 Room 表示
-- 星占い Room のアプリ体験
-- JSON バックアップ / 復元
-- HTML 書き出し
-- PWA インストール
 
 ---
 
