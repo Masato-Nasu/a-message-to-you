@@ -1,6 +1,6 @@
 {
-  "name": "MOTHERSHIP",
-  "short_name": "MOTHERSHIP",
+  "name": "A message to you!",
+  "short_name": "Message",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#f5f5f2",
