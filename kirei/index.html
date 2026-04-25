@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>kirei-filter</title>
+  <meta name="description" content="画像を入れるとAIが補正を提案する kirei-filter の試作版です。" />
+  <meta name="theme-color" content="#f4f4f1" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="kirei-filter" />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="./icons/icon-192.png" />
+  <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png" />
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <main class="app-shell">
+    <header class="hero">
+      <div>
+        <p class="eyebrow">prototype / pwa</p>
+        <h1>kirei-filter</h1>
+        <p class="lead">画像を入れるとAIが補正方針を提案します。</p>
+      </div>
+      <div class="hero-note">
+        <ul>
+          <li>アクセス認証</li>
+          <li>顔 / 食事 / デザイン / プロダクト / 室内 / その他を自動判定</li>
+          <li>画像だけを見ておすすめ補正値を返す</li>
+        </ul>
+      </div>
+    </header>
+
+    <section class="panel install-panel">
+      <div class="install-copy">
+        <h2>ホーム画面に追加</h2>
+        <p>スマホではPWAとして追加できます。追加後はアプリのように開けます。</p>
+      </div>
+      <div class="install-actions">
+        <button id="installButton" class="primary" hidden>ホーム画面に追加</button>
+        <p id="installHint" class="muted">インストール可能ならここに案内が出ます。iPhone / iPad は共有メニューから「ホーム画面に追加」を使ってください。</p>
+      </div>
+    </section>
+
+    <section class="panel keyword-panel">
+      <div class="keyword-copy">
+        <h2>アクセス認証</h2>
+        <p>アクセスキーワードを入力してください。認証後はこの端末で自動的に再利用されます。</p>
+      </div>
+      <div class="keyword-form">
+        <label class="keyword-wrap" for="keywordInput">
+          <span>アクセスキーワード</span>
+          <input id="keywordInput" type="password" maxlength="80" placeholder="キーワードを入力" autocomplete="current-password" />
+        </label>
+        <div class="button-row compact">
+          <button id="keywordLockButton" class="primary">このキーワードで開く</button>
+          <button id="keywordResetButton" type="button">認証を解除</button>
+        </div>
+        <p id="keywordStatus" class="muted">キーワード自体は画面に表示しません。</p>
+      </div>
+    </section>
+
+    <section class="panel upload-panel locked" id="uploadPanel">
+      <label class="dropzone disabled" id="dropzone">
+        <input id="fileInput" type="file" accept="image/*" disabled />
+        <span class="dropzone-title">画像を選択</span>
+        <span class="dropzone-sub">またはここへドラッグ＆ドロップ</span>
+      </label>
+
+      <div class="controls">
+        <div class="status-row">
+          <span class="badge" id="categoryBadge">未解析</span>
+          <span class="muted" id="statusText">先に認証してください</span>
+        </div>
+
+        <label class="slider-wrap">
+          <span>キレイ度</span>
+          <input id="strengthSlider" type="range" min="0" max="100" value="65" />
+          <span id="strengthValue">65%</span>
+        </label>
+
+        <div class="button-row">
+          <button id="analyzeButton" class="primary" disabled>AIで判断する</button>
+          <button id="beforeAfterButton" disabled>Before / After</button>
+          <button id="downloadButton" disabled>保存</button>
+        </div>
+
+        <div class="analysis-box">
+          <h2>AIの判断</h2>
+          <p id="analysisSummary" class="analysis-summary">まだ解析していません。</p>
+          <dl class="analysis-grid" id="analysisGrid">
+            <div><dt>主役</dt><dd>-</dd></div>
+            <div><dt>補正方針</dt><dd>-</dd></div>
+            <div><dt>おすすめ</dt><dd>-</dd></div>
+            <div><dt>注意点</dt><dd>-</dd></div>
+          </dl>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel preview-panel">
+      <div class="canvas-wrap">
+        <div class="canvas-card">
+          <div class="canvas-label">Before</div>
+          <canvas id="beforeCanvas"></canvas>
+        </div>
+        <div class="canvas-card">
+          <div class="canvas-label">After</div>
+          <canvas id="afterCanvas"></canvas>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="./app.js" type="module"></script>
+</body>
+</html>
