@@ -1,4 +1,5 @@
-const EMBEDDED_UNLOCK = new URLSearchParams(location.search).get('embed') === '1' && localStorage.getItem('mothership_ai_unlock_v1') === '1';
+const EMBED_MODE = new URLSearchParams(location.search).get('embed') === '1';
+const EMBEDDED_UNLOCK = EMBED_MODE && localStorage.getItem('mothership_ai_unlock_v1') === '1';
 const EMBED_ROOM_INDEX = Number(new URLSearchParams(location.search).get('room') || -1);
 function notifyMothershipImage(imageData, meta = {}) {
   try {

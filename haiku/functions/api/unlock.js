@@ -1,21 +1,31 @@
+function json(body, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: {
+      'Content-Type': 'application/json; charset=utf-8',
+      'Cache-Control': 'no-store',
+    },
+  });
+}
+
+function getConfiguredKeywords(env) {
+  return [env.APP_KEYWORD, env.APP_PASSWORD, env.ACCESS_KEYWORD]
+    .map((value) => String(value || '').trim())
+    .filter(Boolean);
+}
+
 export async function onRequestPost(context) {
   try {
-    const secretKeyword = context.env.APP_KEYWORD;
+    const configuredKeywords = getConfiguredKeywords(context.env);
     const body = await context.request.json();
     const inputKeyword = String(body.keyword || '').trim();
 
-    if (!secretKeyword) {
-      return new Response(JSON.stringify({ ok: false, error: 'APP_KEYWORD が未設定です。' }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json; charset=utf-8' },
-      });
+    if (!configuredKeywords.length) {
+      return json({ ok: false, error: 'APP_KEYWORD / APP_PASSWORD / ACCESS_KEYWORD のいずれかが未設定です。' }, 500);
     }
 
-    if (inputKeyword !== secretKeyword) {
-      return new Response(JSON.stringify({ ok: false, error: 'キーワードが違います。' }), {
-        status: 401,
-        headers: { 'Content-Type': 'application/json; charset=utf-8' },
-      });
+    if (!configuredKeywords.includes(inputKeyword)) {
+      return json({ ok: false, error: 'キーワードが違います。' }, 401);
     }
 
     return new Response(JSON.stringify({ ok: true }), {
@@ -26,9 +36,6 @@ export async function onRequestPost(context) {
       },
     });
   } catch (_error) {
-    return new Response(JSON.stringify({ ok: false, error: 'リクエストを処理できませんでした。' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json; charset=utf-8' },
-    });
+    return json({ ok: false, error: 'リクエストを処理できませんでした。' }, 500);
   }
 }

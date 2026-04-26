@@ -43,7 +43,7 @@ h1{margin:.35rem 0 0;font-size:30px;line-height:1.15}
 .lens-right{right:20px;top:22px;width:52px;height:52px;border-color:#7f6042;background:#251a13}
 .film-card{background:var(--cream);border:8px solid var(--cream);border-radius:28px;padding:16px 16px 64px;box-shadow:0 18px 40px rgba(0,0,0,.25);max-width:420px;margin:48px auto 0;position:relative}
 .screen-pad{background:#c9b7a2;border-radius:20px;padding:12px;box-shadow:inset 0 2px 8px rgba(0,0,0,.18)}
-.stage{position:relative;aspect-ratio:3/4;max-width:320px;margin:0 auto;border-radius:20px;overflow:hidden;background:#ddd1c1}
+.stage{position:relative;aspect-ratio:3/4;max-width:320px;margin:0 auto;border-radius:20px;overflow:hidden;background:#ddd1c1;touch-action:none}
 .stage::before{content:"";position:absolute;inset:0;background-image:radial-gradient(rgba(255,255,255,.09) 1px, transparent 1px);background-size:8px 8px;opacity:.22;mix-blend-mode:soft-light;pointer-events:none;z-index:3}
 .media,.message-layer{position:absolute;inset:0;width:100%;height:100%}
 .media{object-fit:contain;background:#ddd1c1}
@@ -88,9 +88,9 @@ h1{margin:.35rem 0 0;font-size:30px;line-height:1.15}
 .sticker-chip.active{background:#ffefd1;box-shadow:0 0 0 2px #d5b281 inset}
 .filter-chip.active{background:#ffe8c4;box-shadow:0 0 0 2px #e6bc7b inset;color:#68472c}
 .selected-empty{background:#f6efe6;border-radius:18px;padding:16px;color:#7c6854;font-size:14px;line-height:1.6}
-.message-layer{z-index:5}
-.overlay{position:absolute;transform:translate(-50%,-50%);user-select:none;cursor:grab;max-width:80%;touch-action:none}
-.overlay.selected{outline:2px solid rgba(255,255,255,.9);outline-offset:3px;border-radius:14px}
+.message-layer{z-index:5;touch-action:none}
+.overlay{position:absolute;transform:translate(-50%,-50%);user-select:none;cursor:grab;max-width:86%;min-width:48px;min-height:48px;padding:14px;display:grid;place-items:center;touch-action:none;-webkit-user-select:none}
+.overlay.selected{outline:2px solid rgba(255,255,255,.9);outline-offset:2px;border-radius:18px;background:rgba(255,255,255,.08)}
 .overlay.text span{font-weight:700;letter-spacing:.04em;text-shadow:0 1px 0 rgba(255,255,255,.7),0 2px 10px rgba(0,0,0,.18);white-space:nowrap}
 .overlay.sticker span{filter:drop-shadow(0 2px 8px rgba(0,0,0,.18))}
 .motion-none{}
@@ -155,3 +155,14 @@ h1{margin:.35rem 0 0;font-size:30px;line-height:1.15}
   .mobile-dock{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;position:fixed;left:12px;right:12px;bottom:max(12px, env(safe-area-inset-bottom));z-index:40;padding:10px;border-radius:22px;background:rgba(47,35,26,.92);backdrop-filter:blur(12px);box-shadow:0 12px 30px rgba(0,0,0,.22);pointer-events:none}
   .mobile-dock a{text-decoration:none;text-align:center;color:#fff7ea;font-size:12px;font-weight:700;padding:10px 4px;border-radius:14px;background:rgba(255,255,255,.08)}
 }
+
+
+.overlay{min-width:58px;min-height:58px;padding:16px;display:grid;place-items:center;-webkit-user-select:none;user-select:none;touch-action:none}
+.overlay span{pointer-events:none}
+.overlay.dragging{animation:none!important;cursor:grabbing;z-index:12;filter:drop-shadow(0 10px 18px rgba(0,0,0,.18))}
+.overlay.selected{outline:2px solid rgba(255,255,255,.98);outline-offset:2px;background:rgba(255,255,255,.10)}
+.nudgePanel{border:1px solid #e4d7c6;background:#fff8ef;border-radius:18px;padding:12px}
+.nudgeGrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;align-items:center;max-width:260px;margin:0 auto}
+.nudgeBtn{border:none;border-radius:14px;min-height:42px;background:#eadac4;color:#684a31;font-weight:800;cursor:pointer}
+.nudgeBtn.center{font-size:12px;background:#85542f;color:#fff8ee}
+.miniHelp{margin-top:10px;font-size:12px;line-height:1.45;color:#7e6a59;text-align:center}
