@@ -6,13 +6,13 @@ export async function onRequestPost(context) {
   } catch {}
 
   const submitted = String(body?.keyword || '').trim();
-  const expected = String(env.ACCESS_KEYWORD || '').trim();
+  const validKeywords = getValidKeywords(env);
 
-  if (!expected) {
-    return json({ error: 'ACCESS_KEYWORD が未設定です。' }, 500);
+  if (!validKeywords.length) {
+    return json({ error: 'APP_PASSWORD / APP_KEYWORD / ACCESS_KEYWORD のいずれかが未設定です。' }, 500);
   }
 
-  if (submitted !== expected) {
+  if (!submitted || !validKeywords.includes(submitted)) {
     return json({ error: '認証に失敗しました。' }, 401);
   }
 
@@ -21,15 +21,21 @@ export async function onRequestPost(context) {
     headers: {
       'Content-Type': 'application/json; charset=utf-8',
       'Cache-Control': 'no-store',
-      'Set-Cookie': cookieHeader(expected),
+      'Set-Cookie': cookieHeader(submitted),
     },
   });
 }
 
-function cookieHeader(expected) {
-  const secure = 'Secure; ';
+function getValidKeywords(env) {
+  return [env.ACCESS_KEYWORD, env.APP_KEYWORD, env.APP_PASSWORD]
+    .map(value => String(value || '').trim())
+    .filter(Boolean)
+    .filter((value, index, array) => array.indexOf(value) === index);
+}
+
+function cookieHeader(value) {
   const maxAge = 60 * 60 * 24 * 365;
-  return `kf_auth=${encodeURIComponent(expected)}; ${secure}HttpOnly; Path=/; SameSite=Lax; Max-Age=${maxAge}`;
+  return `kf_auth=${encodeURIComponent(value)}; Secure; HttpOnly; Path=/; SameSite=Lax; Max-Age=${maxAge}`;
 }
 
 function json(data, status = 200) {

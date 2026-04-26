@@ -4,9 +4,9 @@ const LIBRARY_KEY = 'mothership_library_v1';
 const UNLOCK_KEY = 'mothership_ai_unlock_v1';
 
 const APPS = [
-  { id: '904', name: '904', locked: true, desc: '意味をずらす', path: './apps/904/index.html' },
-  { id: 'kirei', name: 'Kirei Filter', locked: true, desc: '整える', path: './apps/kirei/index.html' },
-  { id: 'haiku', name: 'Haiku', locked: true, desc: '圧縮する', path: './apps/haiku/index.html' },
+  { id: '904', name: '904', locked: false, desc: '意味をずらす', path: './apps/904/index.html' },
+  { id: 'kirei', name: 'Kirei Filter', locked: false, desc: '整える', path: './apps/kirei/index.html' },
+  { id: 'haiku', name: 'Haiku', locked: false, desc: '圧縮する', path: './apps/haiku/index.html' },
   { id: 'hokago', name: '放課後カメラ', locked: false, desc: '見つけたものを撮る', path: './apps/hokago/index.html' },
   { id: 'small-memory', name: 'SMALL MEMORY', locked: false, desc: '言葉を置く', path: './apps/small-memory/index.html' },
   { id: 'mandelbrot', name: 'Mandelbrot Explorer', locked: false, desc: '構造を覗く', path: './apps/mandelbrot/index.html' },
@@ -192,10 +192,10 @@ function appExperienceUrl(appInfo) {
     const url = new URL(appInfo.path, location.href);
     url.searchParams.set('gift', '1');
     url.searchParams.set('embed', '1');
-    url.searchParams.set('msv', '37');
+    url.searchParams.set('msv', '48');
     return url.href;
   } catch {
-    return String(appInfo.path || '') + '?gift=1&embed=1&msv=38';
+    return String(appInfo.path || '') + '?gift=1&embed=1&msv=49';
   }
 }
 
@@ -462,7 +462,7 @@ function openEmbeddedApp(appInfo) {
   activeEmbeddedRoomIndex = pendingRoomIndex;
   const sep = appInfo.path.includes('?') ? '&' : '?';
   appFrame.onload = () => patchEmbeddedApp(appInfo);
-  appFrame.src = `${appInfo.path}${sep}embed=1&room=${pendingRoomIndex ?? ''}&msv=38`;
+  appFrame.src = `${appInfo.path}${sep}embed=1&room=${pendingRoomIndex ?? ''}&msv=49`;
   setScreen('app');
 }
 
@@ -945,8 +945,41 @@ function openLibrary(appId) {
   libraryDialog.showModal();
 }
 
+function libraryItemToRoom(item, index) {
+  const appInfo = appById(item.appId) || {};
+  return {
+    id: crypto.randomUUID ? crypto.randomUUID() : `room-${Date.now()}-${index}`,
+    appId: item.appId,
+    title: item.title || appInfo.name || '',
+    note: item.note || appInfo.desc || '',
+    imageData: item.imageData || null,
+    posterData: item.posterData || null,
+    videoData: item.videoData || null,
+    appExperience: !!item.appExperience || item.appId === 'fortune',
+    createdAt: new Date().toISOString(),
+    source: 'library',
+  };
+}
+
+function pickLibraryTargetRoomIndex() {
+  if (!Array.isArray(state.rooms) || !state.rooms.length) return null;
+  if (pendingRoomIndex !== null && pendingRoomIndex !== undefined && state.rooms[pendingRoomIndex]) return pendingRoomIndex;
+  const firstEmpty = state.rooms.findIndex(room => !room.appId && !room.imageData && !room.posterData && !room.videoData);
+  const defaultRoom = firstEmpty >= 0 ? firstEmpty + 1 : 1;
+  if (state.rooms.length === 1) return 0;
+  const answer = prompt(`どのRoomに入れますか？（1〜${state.rooms.length}）`, String(defaultRoom));
+  if (answer === null) return null;
+  const n = Number.parseInt(answer, 10);
+  if (!Number.isFinite(n) || n < 1 || n > state.rooms.length) {
+    alert('Room番号を正しく入力してください。');
+    return null;
+  }
+  return n - 1;
+}
+
 function openGlobalLibrary() {
-  libraryTitle.textContent = 'Global Library';
+  pendingRoomIndex = null;
+  libraryTitle.textContent = 'Room Library';
   libraryList.innerHTML = '';
   if (!library.length) {
     const empty = document.createElement('div');
@@ -955,19 +988,28 @@ function openGlobalLibrary() {
     libraryList.appendChild(empty);
   } else {
     library.forEach(item => {
-      const div = document.createElement('div');
-      div.className = 'library-item';
-      div.innerHTML = `
-        <div><strong>${escapeHtml(item.title || appById(item.appId).name)}</strong></div>
+      const appInfo = appById(item.appId) || {};
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'library-item selectable';
+      btn.innerHTML = `
+        <div><strong>${escapeHtml(item.title || appInfo.name || 'Room material')}</strong></div>
         <div class="library-copy">${escapeHtml(item.note || 'No note')}</div>
-        <div class="library-meta"><span>${appById(item.appId).name}</span><span>${new Date(item.createdAt).toLocaleString('ja-JP')}</span></div>
+        <div class="library-meta"><span>${escapeHtml(appInfo.name || item.appId || 'App')}</span><span>${new Date(item.createdAt).toLocaleString('ja-JP')}</span><span>Tap to use</span></div>
       `;
-      libraryList.appendChild(div);
+      btn.addEventListener('click', () => {
+        const targetIndex = pickLibraryTargetRoomIndex();
+        if (targetIndex === null || targetIndex === undefined) return;
+        state.rooms[targetIndex] = libraryItemToRoom(item, targetIndex);
+        libraryDialog.close();
+        resetInteractionModes();
+        render();
+      });
+      libraryList.appendChild(btn);
     });
   }
   libraryDialog.showModal();
 }
-
 function buildNewRoom() {
   state.rooms[pendingRoomIndex] = {
     id: crypto.randomUUID ? crypto.randomUUID() : `room-${Date.now()}-${pendingRoomIndex}`,
@@ -1193,7 +1235,7 @@ function makeGiftHtml() {
 :root{--bg:#f5f5f2;--card:#fff;--text:rgba(0,0,0,.82);--muted:rgba(0,0,0,.46);--line:rgba(0,0,0,.09);--shadow:0 10px 30px rgba(0,0,0,.06);--ai:#f2eee5;}
 *{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Helvetica,Arial,sans-serif;}body{min-height:100vh;}
 .shell{width:min(980px,100%);margin:0 auto;padding:calc(22px + env(safe-area-inset-top)) 16px calc(28px + env(safe-area-inset-bottom));}
-.header{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:20px}.brand{font-size:14px;letter-spacing:.16em;color:var(--muted)}.meta{font-size:12px;color:var(--muted);text-align:right;line-height:1.5}
+.header{display:flex;align-items:flex-end;justify-content:flex-end;gap:16px;margin-bottom:12px}.brand{font-size:14px;letter-spacing:.16em;color:var(--muted)}.meta{font-size:12px;color:var(--muted);text-align:right;line-height:1.5}
 .hero{background:rgba(255,255,255,.52);border:1px solid var(--line);border-radius:24px;padding:18px;margin-bottom:14px;box-shadow:var(--shadow)}h1{margin:0 0 8px;font-size:clamp(26px,5vw,42px);letter-spacing:.04em}.lead{margin:0;color:var(--muted);line-height:1.65}
 .room-grid{display:grid;gap:12px}.rooms-1{grid-template-columns:1fr;max-width:540px;margin:0 auto}.rooms-3,.rooms-9{grid-template-columns:repeat(3,1fr)}
 .room{position:relative;aspect-ratio:1;border:1px solid var(--line);border-radius:20px;background:var(--card);box-shadow:var(--shadow);overflow:hidden;display:grid;align-content:end;padding:14px;min-width:0}.room.ai{background:linear-gradient(180deg,#fff 0%,var(--ai) 100%)}.room.empty{align-content:center;justify-items:center;color:var(--muted)}.room.app-room{background:radial-gradient(circle at 24% 18%,rgba(255,255,255,.95),rgba(242,238,229,.92) 42%,rgba(218,211,196,.8));cursor:pointer}.room.app-fortune{border-color:rgba(196,152,199,.32);background:linear-gradient(145deg,#fff7fb 0%,#fff6df 44%,#eee9ff 100%)}.room.app-fortune:before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 22% 18%,rgba(255,255,255,.92) 0 9%,transparent 10%),radial-gradient(circle at 72% 22%,rgba(255,219,243,.68) 0 12%,transparent 13%),radial-gradient(circle at 78% 78%,rgba(212,204,255,.7) 0 16%,transparent 17%);pointer-events:none}.fortune-top-deco{position:absolute;left:14px;top:14px;right:64px;display:flex;gap:7px;align-items:center;color:#9d6ca4;font-size:18px;z-index:1}.fortune-top-deco span{display:grid;place-items:center;width:24px;height:24px;border-radius:999px;background:rgba(255,255,255,.58);box-shadow:0 6px 16px rgba(127,94,120,.12)}.room.app-fortune .badge{background:rgba(255,255,255,.56);color:#8b627f;border:1px solid rgba(255,255,255,.68)}.app-mark{position:absolute;right:14px;top:14px;width:42px;height:42px;border-radius:999px;background:rgba(255,255,255,.66);display:grid;place-items:center;font-size:20px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.72);color:#9d6ca4}.app-room .overlay{align-self:end}.app-room .hint{font-size:12px;color:var(--muted)}
@@ -1204,7 +1246,7 @@ function makeGiftHtml() {
 </head>
 <body>
 <div class="shell">
-  <header class="header"><div class="brand">A message to you!</div><div id="meta" class="meta"></div></header>
+  <header class="header"><div id="meta" class="meta"></div></header>
   <section class="hero"><h1>A message to you!</h1><p class="lead">送られてきた作品や画像を見たり、Room内のアプリを開いて体験できます。</p></section>
   <main id="rooms"></main>
   <div class="footer">Generated by A message to you!</div>
@@ -1278,9 +1320,11 @@ function buildGiftHtmlBlob() {
     return null;
   }
   const html = makeGiftHtml();
-  const filename = `A message to you!-${Date.now()}.html`;
+  const timestamp = Date.now();
+  const filename = `A message to you!-${timestamp}.html`;
+  const safeBaseName = `A-message-to-you-${timestamp}`;
   const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
-  return { blob, filename };
+  return { blob, filename, html, safeBaseName };
 }
 
 function downloadHtml() {
@@ -1312,7 +1356,9 @@ async function sendHtml() {
     if (error?.name === 'AbortError') return;
   }
   downloadBlob(gift.blob, gift.filename);
+  alert('HTMLを保存しました。');
 }
+
 
 
 

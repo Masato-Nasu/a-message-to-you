@@ -135,10 +135,17 @@ function json(data, status = 200) {
 }
 
 function isAuthenticated(request, env) {
-  const expected = String(env.ACCESS_KEYWORD || '').trim();
-  if (!expected) return false;
+  const validKeywords = getValidKeywords(env);
+  if (!validKeywords.length) return false;
   const cookies = parseCookies(request.headers.get('Cookie') || '');
-  return cookies.kf_auth === expected;
+  return validKeywords.includes(cookies.kf_auth || '');
+}
+
+function getValidKeywords(env) {
+  return [env.ACCESS_KEYWORD, env.APP_KEYWORD, env.APP_PASSWORD]
+    .map(value => String(value || '').trim())
+    .filter(Boolean)
+    .filter((value, index, array) => array.indexOf(value) === index);
 }
 
 function parseCookies(cookieHeader) {

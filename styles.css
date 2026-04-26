@@ -35,8 +35,8 @@ button {
 .shell-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 4px 2px 18px;
+  justify-content: flex-end;
+  padding: 0 2px 14px;
 }
 .brand {
   font-size: 14px;
@@ -305,11 +305,18 @@ button {
   gap: 10px;
 }
 .app-item, .library-item {
+  width: 100%;
   padding: 14px;
   background: var(--card);
   border: 1px solid var(--line);
   border-radius: 16px;
   text-align: left;
+}
+button.library-item.selectable {
+  cursor: pointer;
+}
+button.library-item.selectable:active {
+  transform: translateY(1px);
 }
 .app-item.ai { background: var(--ai); }
 .app-name {
